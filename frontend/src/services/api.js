@@ -1,8 +1,7 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: 'http://localhost:5000/api/v1',
-  withCredentials: true
+  baseURL: 'http://localhost:5000/api/v1'
 });
 
 // Request interceptor for adding the bearer token
@@ -13,5 +12,17 @@ API.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// Response interceptor for handling 401 errors
+API.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      localStorage.removeItem('token');
+      window.location = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default API;
