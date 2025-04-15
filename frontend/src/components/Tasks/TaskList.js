@@ -1,102 +1,114 @@
 import React, { useState, useEffect } from 'react';
-import API from '../../services/api';
-import { 
-  List, 
-  ListItem, 
-  ListItemText, 
-  Checkbox, 
-  IconButton, 
-  Typography, 
+import {
   Box,
-  Button
-} from '@material-ui/core';
-import DeleteIcon from '@material-ui/icons/Delete';
+  Container,
+  Paper,
+  Typography,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
+  IconButton,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
+} from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
+import axios from 'axios';
 import TaskForm from './TaskForm';
 
 const TaskList = () => {
   const [tasks, setTasks] = useState([]);
-  const [showForm, setShowForm] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(null);
 
   useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        const response = await API.get('/tasks');
-        setTasks(response.data.data.tasks);
-      } catch (error) {
-        console.error('Error fetching tasks:', error);
-      }
-    };
     fetchTasks();
   }, []);
 
-  const handleToggleComplete = async (taskId, currentStatus) => {
+  const fetchTasks = async () => {
     try {
-      const response = await API.patch(`/tasks/${taskId}`, {
-        completed: !currentStatus
+      const token = localStorage.getItem('token');
+      const response = await axios.get('/api/v1/tasks', {
+        headers: { Authorization: `Bearer ${token}` }
       });
-      setTasks(tasks.map(task => 
-        task._id === taskId ? response.data.data.task : task
-      ));
+      setTasks(response.data);
     } catch (error) {
-      console.error('Error updating task:', error);
+      console.error('Error fetching tasks:', error);
     }
   };
 
   const handleDelete = async (taskId) => {
     try {
-      await API.delete(`/tasks/${taskId}`);
-      setTasks(tasks.filter(task => task._id !== taskId));
+      const token = localStorage.getItem('token');
+      await axios.delete(`/api/v1/tasks/${taskId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchTasks();
     } catch (error) {
       console.error('Error deleting task:', error);
     }
   };
 
-  const handleAddTask = (newTask) => {
-    setTasks([...tasks, newTask]);
-    setShowForm(false);
+  const handleOpen = (task = null) => {
+    setSelectedTask(task);
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+    setSelectedTask(null);
   };
 
   return (
-    <Box mt={4}>
-      <Typography variant="h5" gutterBottom>
-        My Tasks
-      </Typography>
-      {!showForm ? (
-        <Button 
-          variant="contained" 
-          color="primary" 
-          onClick={() => setShowForm(true)}
-          style={{ marginBottom: '20px' }}
-        >
-          Add New Task
-        </Button>
-      ) : (
-        <TaskForm onAddTask={handleAddTask} onCancel={() => setShowForm(false)} />
-      )}
-      <List>
-        {tasks.length === 0 ? (
-          <Typography>No tasks found. Add a new task!</Typography>
-        ) : (
-          tasks.map(task => (
-            <ListItem key={task._id} dense>
-              <Checkbox
-                edge="start"
-                checked={task.completed}
-                onChange={() => handleToggleComplete(task._id, task.completed)}
-              />
-              <ListItemText
-                primary={task.title}
-                secondary={task.description}
-                style={{ textDecoration: task.completed ? 'line-through' : 'none' }}
-              />
-              <IconButton edge="end" onClick={() => handleDelete(task._id)}>
-                <DeleteIcon />
-              </IconButton>
-            </ListItem>
-          ))
-        )}
-      </List>
-    </Box>
+    <Container maxWidth="md">
+      <Box sx={{ mt: 4 }}>
+        <Paper elevation={3} sx={{ p: 4 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Typography variant="h5" component="h1">
+              My Tasks
+            </Typography>
+            <Button variant="contained" onClick={() => handleOpen()}>
+              Add Task
+            </Button>
+          </Box>
+
+          <List>
+            {tasks.map((task) => (
+              <ListItem key={task._id}>
+                <ListItemText
+                  primary={task.title}
+                  secondary={task.description}
+                />
+                <ListItemSecondaryAction>
+                  <IconButton edge="end" onClick={() => handleDelete(task._id)}>
+                    <DeleteIcon />
+                  </IconButton>
+                </ListItemSecondaryAction>
+              </ListItem>
+            ))}
+          </List>
+        </Paper>
+      </Box>
+
+      <Dialog open={open} onClose={handleClose}>
+        <DialogTitle>{selectedTask ? 'Edit Task' : 'Add Task'}</DialogTitle>
+        <DialogContent>
+          <TaskForm
+            task={selectedTask}
+            onSuccess={() => {
+              handleClose();
+              fetchTasks();
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>Cancel</Button>
+        </DialogActions>
+      </Dialog>
+    </Container>
   );
 };
 
