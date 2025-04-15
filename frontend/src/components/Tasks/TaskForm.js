@@ -1,93 +1,73 @@
-import React, { useState } from 'react';
-import API from '../../services/api';
-import { 
-  TextField, 
-  Button, 
-  Box,
-  Typography
-} from '@material-ui/core';
+import React, { useState, useEffect } from 'react';
+import { TextField, Button, Box } from '@mui/material';
+import axios from 'axios';
 
-const TaskForm = ({ onAddTask, onCancel }) => {
-  const [task, setTask] = useState({
+const TaskForm = ({ task, onSuccess }) => {
+  const [formData, setFormData] = useState({
     title: '',
     description: ''
   });
-  const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    if (task) {
+      setFormData({
+        title: task.title,
+        description: task.description
+      });
+    }
+  }, [task]);
 
   const handleChange = (e) => {
-    setTask({
-      ...task,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Basic validation
-    if (!task.title) {
-      setErrors({ title: 'Title is required' });
-      return;
-    }
-    
     try {
-      const response = await API.post('/tasks', task);
-      onAddTask(response.data.data.task);
+      const token = localStorage.getItem('token');
+      if (task) {
+        await axios.put(`/api/v1/tasks/${task._id}`, formData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      } else {
+        await axios.post('/api/v1/tasks', formData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
+      onSuccess();
     } catch (error) {
-      console.error('Error creating task:', error);
-      setErrors({ general: 'Failed to create task' });
+      console.error('Error saving task:', error);
     }
   };
 
   return (
-    <Box mb={3}>
-      <Typography variant="h6" gutterBottom>
-        Add New Task
-      </Typography>
-      {errors.general && (
-        <Typography color="error">
-          {errors.general}
-        </Typography>
-      )}
-      <form onSubmit={handleSubmit}>
-        <TextField
-          label="Title"
-          name="title"
-          value={task.title}
-          onChange={handleChange}
-          fullWidth
-          margin="normal"
-          error={!!errors.title}
-          helperText={errors.title}
-          required
-        />
-        <TextField
-          label="Description"
-          name="description"
-          value={task.description}
-          onChange={handleChange}
-          fullWidth
-          margin="normal"
-          multiline
-          rows={3}
-        />
-        <Box mt={2}>
-          <Button 
-            type="submit" 
-            variant="contained" 
-            color="primary"
-            style={{ marginRight: '10px' }}
-          >
-            Save
-          </Button>
-          <Button 
-            variant="outlined" 
-            onClick={onCancel}
-          >
-            Cancel
-          </Button>
-        </Box>
-      </form>
+    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
+      <TextField
+        fullWidth
+        label="Title"
+        name="title"
+        value={formData.title}
+        onChange={handleChange}
+        margin="normal"
+        required
+      />
+      <TextField
+        fullWidth
+        label="Description"
+        name="description"
+        value={formData.description}
+        onChange={handleChange}
+        margin="normal"
+        multiline
+        rows={4}
+      />
+      <Button
+        type="submit"
+        variant="contained"
+        sx={{ mt: 2 }}
+      >
+        {task ? 'Update Task' : 'Add Task'}
+      </Button>
     </Box>
   );
 };
