@@ -1,81 +1,76 @@
 import React, { useState } from 'react';
-import API from '../../services/api';
-import { Button, Box, Typography, CircularProgress } from '@material-ui/core';
-import CloudUploadIcon from '@material-ui/icons/CloudUpload';
+import { Box, Button, Typography, CircularProgress } from '@mui/material';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import axios from 'axios';
 
 const ImageUpload = ({ onUploadSuccess }) => {
-  const [isUploading, setIsUploading] = useState(false);
-  const [error, setError] = useState(null);
+  const [file, setFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
-  const handleFileChange = async (e) => {
-    const file = e.target.files[0];
+  const handleFileChange = (e) => {
+    if (e.target.files[0]) {
+      setFile(e.target.files[0]);
+    }
+  };
+
+  const handleUpload = async () => {
     if (!file) return;
-
-    // Basic validation
-    if (!file.type.startsWith('image/')) {
-      setError('Please upload an image file');
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setError('File size must be less than 5MB');
-      return;
-    }
 
     const formData = new FormData();
     formData.append('photo', file);
 
     try {
-      setIsUploading(true);
-      setError(null);
-      
-      const response = await API.post('/upload/profile-picture', formData, {
+      setUploading(true);
+      const token = localStorage.getItem('token');
+      const response = await axios.post('/api/v1/upload', formData, {
         headers: {
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
         }
       });
-
       if (onUploadSuccess) {
-        onUploadSuccess(response.data.data.imageUrl);
+        onUploadSuccess(response.data.url);
       }
-    } catch (err) {
-      setError('Failed to upload image. Please try again.');
+    } catch (error) {
+      console.error('Error uploading image:', error);
     } finally {
-      setIsUploading(false);
+      setUploading(false);
     }
   };
 
   return (
-    <Box>
+    <Box sx={{ textAlign: 'center', p: 3 }}>
       <input
         accept="image/*"
         style={{ display: 'none' }}
-        id="image-upload"
+        id="raised-button-file"
         type="file"
         onChange={handleFileChange}
-        disabled={isUploading}
       />
-      <label htmlFor="image-upload">
+      <label htmlFor="raised-button-file">
         <Button
           variant="contained"
-          color="primary"
           component="span"
           startIcon={<CloudUploadIcon />}
-          disabled={isUploading}
+          disabled={uploading}
         >
-          {isUploading ? (
-            <>
-              <CircularProgress size={24} />
-              <Box ml={1}>Uploading...</Box>
-            </>
-          ) : (
-            'Upload Image'
-          )}
+          Choose Image
         </Button>
       </label>
-      {error && (
-        <Typography color="error" style={{ marginTop: 8 }}>
-          {error}
-        </Typography>
+      {file && (
+        <Box sx={{ mt: 2 }}>
+          <Typography variant="body2">
+            Selected: {file.name}
+          </Typography>
+          <Button
+            variant="contained"
+            onClick={handleUpload}
+            disabled={uploading}
+            sx={{ mt: 2 }}
+          >
+            {uploading ? <CircularProgress size={24} /> : 'Upload'}
+          </Button>
+        </Box>
       )}
     </Box>
   );
