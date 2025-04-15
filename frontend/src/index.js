@@ -1,12 +1,12 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import { ThemeProvider, createMuiTheme } from '@material-ui/core/styles';
-import CssBaseline from '@material-ui/core/CssBaseline';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import App from './App';
 
 // Create a theme instance
-const theme = createMuiTheme({
+const theme = createTheme({
   palette: {
     primary: {
       main: '#3f51b5',
@@ -34,7 +34,8 @@ const theme = createMuiTheme({
   },
 });
 
-ReactDOM.render(
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
   <React.StrictMode>
     <BrowserRouter>
       <ThemeProvider theme={theme}>
@@ -42,20 +43,5 @@ ReactDOM.render(
         <App />
       </ThemeProvider>
     </BrowserRouter>
-  </React.StrictMode>,
-  document.getElementById('root')
+  </React.StrictMode>
 );
-
-// Service worker registration (optional)
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js').then(
-      (registration) => {
-        console.log('ServiceWorker registration successful with scope: ', registration.scope);
-      },
-      (err) => {
-        console.log('ServiceWorker registration failed: ', err);
-      }
-    );
-  });
-}
