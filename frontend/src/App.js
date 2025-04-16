@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate, createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 
@@ -24,38 +24,16 @@ const theme = createTheme({
 const App = () => {
   const isAuthenticated = localStorage.getItem('token');
 
-  const router = createBrowserRouter([
-    {
-      path: "/",
-      element: isAuthenticated ? <Navigate to="/profile" /> : <Auth />,
-    },
-    {
-      path: "/auth",
-      element: isAuthenticated ? <Navigate to="/profile" /> : <Auth />,
-    },
-    {
-      path: "/profile",
-      element: isAuthenticated ? <Profile /> : <Navigate to="/auth" />,
-    },
-    {
-      path: "/tasks",
-      element: isAuthenticated ? <TaskList /> : <Navigate to="/auth" />,
-    },
-    {
-      path: "/upload",
-      element: isAuthenticated ? <ImageUpload /> : <Navigate to="/auth" />,
-    },
-  ], {
-    future: {
-      v7_startTransition: true,
-      v7_relativeSplatPath: true
-    }
-  });
-
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <RouterProvider router={router} />
+      <Routes>
+        <Route path="/" element={isAuthenticated ? <Navigate to="/profile" /> : <Auth />} />
+        <Route path="/auth" element={isAuthenticated ? <Navigate to="/profile" /> : <Auth />} />
+        <Route path="/profile" element={isAuthenticated ? <Profile /> : <Navigate to="/auth" />} />
+        <Route path="/tasks" element={isAuthenticated ? <TaskList /> : <Navigate to="/auth" />} />
+        <Route path="/upload" element={isAuthenticated ? <ImageUpload /> : <Navigate to="/auth" />} />
+      </Routes>
     </ThemeProvider>
   );
 };
